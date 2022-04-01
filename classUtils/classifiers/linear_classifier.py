@@ -33,7 +33,7 @@ class LinearClassifier(object):
     """
 	
     num_train, dim = X_train.shape
-	# num_iters is the number of steps to take when optimizing defined by the following formula
+	  # num_iters is the number of steps to take when optimizing defined by the following formula
     num_iters = (num_train*num_epochs/batch_size)
     num_classes = np.max(y_train) + 1 # assume y takes values 0...K-1 where K is number of classes
 	
@@ -41,19 +41,25 @@ class LinearClassifier(object):
       # lazily initialize W
       self.W = 0.001 * np.random.randn(dim, num_classes)
 
-	#array to save the computed training loss, either create an array of zeros or an empty list 
+	  #array to save the computed training loss, either create an array of zeros or an empty list 
     train_loss_history = np.zeros(shape = (num_iters,1))
-	#array to save the computer validation loss
+	  #array to save the computer validation loss
     valid_loss_history = np.zeros(shape = (num_iters,1))
     
     # Run stochastic gradient descent to optimize W
-    
+    train_loss_list=list()
     for it in xrange(num_iters):
       X_batch = None
       y_batch = None
 	  
       train_loss = 0
-	  
+      #find indexes
+      train_indx=np.random.choice(num_train,batch_size)
+      #secure batches
+      X_batch =  np.transpose(X_train[train_indx]) 
+      y_batch  = y_train[train_indx]
+
+      
       #########################################################################
       # TODO:                                                                 #
       # Sample batch_size elements from the training data and their           #
@@ -61,12 +67,12 @@ class LinearClassifier(object):
       # Store the data in X_batch and their corresponding labels in           #
       # y_batch; after sampling X_batch should have shape (dim, batch_size)   #
       # and y_batch should have shape (batch_size,)                           #
-	  #																		  #
-	  # IMPORTANT NOTE !!!													  #
+	    #																		  #
+	    # IMPORTANT NOTE !!!													  #
       # In your implementation you need to call the loss function of 		  #
-	  # the class (self.loss(...)),										      #
-	  # Do not use the compute_gradient_and_loss directly 					  #
-	  #																		  #
+	    # the class (self.loss(...)),										      #
+	    # Do not use the compute_gradient_and_loss directly 					  #
+	    #																		  #
       # Hint: Use np.random.choice to generate indices. Sampling with         #
       # replacement is faster than sampling without replacement.              #
       #########################################################################
@@ -75,30 +81,35 @@ class LinearClassifier(object):
       #                       END OF YOUR CODE                                #
       #########################################################################		
       # evaluate loss and gradient
-
-
+      (train_loss,gradient) = self.loss(self.W, X_batch, y_batch, reg, reg_type, 0)
+      train_loss_history[it] = train_loss
+      
       # perform parameter update
       #########################################################################
       # TODO:                                                                 #
       # Update the weights self.W using the gradient and the learning rate.   #
       #########################################################################
-      
+      self.W = self.W - learning_rate * np.transpose(gradient)
       #########################################################################
       #                       END OF YOUR CODE                                #
       #########################################################################
-
-	  #########################################################################
-      # TODO:                                                                 #
-      # Print out the computed loss values for training and validation samples#
-	  # i.e the training loss can be printed as provided below   		      #
+    
       #########################################################################
+        # TODO:                                                                 #
+        # Print out the computed loss values for training and validation samples#
+      # i.e the training loss can be printed as provided below   		      #
+        #########################################################################
+      (val_loss,gradient) = self.loss(self.W, X_val, y_val, reg, reg_type, 1)
+      valid_loss_history[it] = val_loss
       if verbose and it % 100 == 0:
-        print 'iteration No %d / %d: loss %f' % (it, num_iters, train_loss)
+        print "iteration No %d / %d: train loss %f , val loss %f " % (it, num_iters, train_loss,val_loss)
+    
 
       #########################################################################
       #                       END OF YOUR CODE                                #
       #########################################################################
-
+      
+   
     return train_loss_history, valid_loss_history
 
   def predict_image_class(self, X):
@@ -115,6 +126,10 @@ class LinearClassifier(object):
       class.
     """
     y_pred = np.zeros(X.shape[1])
+    w_t = np.transpose(self.W)
+    #make prediction for each class. W_i * X + B_i
+    for class_index in range(w_t.shape[0]):
+      y_pred[class_index] = (w_t[class_index][:-1].dot(X) + weights[class_index][-1])
     ###########################################################################
     # TODO:                                                                   #
     # Implement this method. Store the predicted labels in y_pred.            #
